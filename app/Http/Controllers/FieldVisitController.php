@@ -11,11 +11,15 @@ class FieldVisitController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
-    {
-        $visits = FieldVisit::with(['user', 'attachments'])->latest()->paginate(10);
-        return response()->json($visits);
-    }
+    public function index(Request $request)
+{
+    $visits = FieldVisit::with(['user', 'attachments'])
+        ->where('user_id', $request->user()->id)
+        ->latest()
+        ->paginate(10);
+
+    return response()->json($visits);
+}   
 
     // عرض تفاصيل زيارة ميدانية معينة
     public function show($id)

@@ -43,8 +43,6 @@ class ConsultationController extends Controller
 public function store(Request $request)
 {
     $validated = $request->validate([
-
-        'user_id' => 'required|exists:users,id',
         'issue_title' => 'required|string|max:255',
         'crop_type' => 'required|string|max:100',
         'crop_age' => 'required|string|max:100',
@@ -52,12 +50,19 @@ public function store(Request $request)
         'description' => 'required|string',
         'status' => 'nullable|string|max:50',
         'assigned_expert_id' => 'nullable|exists:users,id',
-
     ]);
+
+    // إذا كان المستخدم مسجل دخول، نربط الاستشارة بحسابه
+    // وإذا كان زائرًا، يبقى user_id = null
+    $validated['user_id'] = $request->user()?->id;
+
+    // الحالة الافتراضية
+    $validated['status'] = $validated['status'] ?? 'pending';
 
     $consultation = Consultation::create($validated);
 
     return response()->json([
+        'status' => true,
         'message' => 'Consultation created successfully',
         'data' => $consultation
     ], 201);
