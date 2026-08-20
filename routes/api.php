@@ -21,6 +21,7 @@ use App\Http\Controllers\FieldVisitController;
 use App\Http\Controllers\PlatformSettingController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\NotificationController;
 
 
 /*
@@ -37,7 +38,6 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
 /*
 |--------------------------------------------------------------------------
 | Public Routes
-| لا تتطلب تسجيل دخول
 |--------------------------------------------------------------------------
 */
 
@@ -51,7 +51,6 @@ Route::post('/login', [AuthController::class, 'login'])
 /*
 |--------------------------------------------------------------------------
 | Free Consultation
-| متاح للزائر والمستخدم المسجل
 |--------------------------------------------------------------------------
 */
 
@@ -62,7 +61,7 @@ Route::post('/consultations', [ConsultationController::class, 'store'])
 /*
 |--------------------------------------------------------------------------
 | Public Feasibility Studies
-| عرض دراسات الجدوى متاح للزوار بدون تسجيل دخول
+| متاحة للزوار بدون تسجيل دخول
 |--------------------------------------------------------------------------
 */
 
@@ -151,12 +150,10 @@ Route::get('/platform_settings', [PlatformSettingController::class, 'index'])
 /*
 |--------------------------------------------------------------------------
 | Protected Routes
-| تتطلب تسجيل دخول باستخدام Sanctum
 |--------------------------------------------------------------------------
 */
 
 Route::middleware(['auth:sanctum'])->group(function () {
-
 
     /*
     |--------------------------------------------------------------------------
@@ -183,15 +180,43 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
         Route::apiResource('roles', RoleController::class);
 
-        Route::put('/platform_settings', [PlatformSettingController::class, 'update'])
-            ->name('api.platform-settings.update');
+        Route::put(
+            '/platform_settings',
+            [PlatformSettingController::class, 'update']
+        )->name('api.platform-settings.update');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Admin Notifications
+        |--------------------------------------------------------------------------
+        */
+
+        Route::prefix('admin/notifications')->group(function () {
+
+            Route::get(
+                '/',
+                [NotificationController::class, 'index']
+            );
+
+            Route::post(
+                '/send',
+                [NotificationController::class, 'send']
+            );
+
+            Route::patch(
+                '/{id}/read',
+                [NotificationController::class, 'markAsRead']
+            );
+
+        });
+
     });
 
 
     /*
     |--------------------------------------------------------------------------
     | Consultation Management
-    | الإدارة تحتاج تسجيل دخول + صلاحية
     |--------------------------------------------------------------------------
     */
 
@@ -199,26 +224,43 @@ Route::middleware(['auth:sanctum'])->group(function () {
         'permission:manage consultations|answer consultations'
     ])->group(function () {
 
-        Route::get('/consultations', [ConsultationController::class, 'index']);
+        Route::get(
+            '/consultations',
+            [ConsultationController::class, 'index']
+        );
 
-        Route::get('/consultations/{id}', [ConsultationController::class, 'show']);
+        Route::get(
+            '/consultations/{id}',
+            [ConsultationController::class, 'show']
+        );
 
-        Route::put('/consultations/{id}', [ConsultationController::class, 'update']);
+        Route::put(
+            '/consultations/{id}',
+            [ConsultationController::class, 'update']
+        );
 
-        Route::patch('/consultations/{id}', [ConsultationController::class, 'update']);
+        Route::patch(
+            '/consultations/{id}',
+            [ConsultationController::class, 'update']
+        );
 
-        Route::delete('/consultations/{id}', [ConsultationController::class, 'destroy']);
+        Route::delete(
+            '/consultations/{id}',
+            [ConsultationController::class, 'destroy']
+        );
+
     });
 
 
     /*
     |--------------------------------------------------------------------------
     | Feasibility Studies Management
-    | إنشاء وتعديل وحذف الدراسات يحتاج تسجيل دخول وصلاحية
     |--------------------------------------------------------------------------
     */
 
-    Route::middleware(['permission:manage feasibility studies'])->group(function () {
+    Route::middleware([
+        'permission:manage feasibility studies'
+    ])->group(function () {
 
         Route::post(
             '/feasibility_studies',
@@ -239,6 +281,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             '/feasibility_studies/{id}',
             [FeasibilityStudyController::class, 'destroy']
         );
+
     });
 
 
@@ -256,6 +299,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             'feasibility_requests',
             FeasibilityRequestController::class
         );
+
     });
 
 
@@ -286,7 +330,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
     /*
     |--------------------------------------------------------------------------
     | Field Visits
-    | تتطلب تسجيل الدخول
     |--------------------------------------------------------------------------
     */
 
@@ -298,11 +341,44 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
+    | Field Visit Workflow
+    |--------------------------------------------------------------------------
+    */
+
+    Route::prefix('field_visits')->group(function () {
+
+        Route::patch(
+            '{id}/assign',
+            [FieldVisitController::class, 'assignEngineer']
+        );
+
+        Route::patch(
+            '{id}/estimate',
+            [FieldVisitController::class, 'submitEstimate']
+        );
+
+        Route::post(
+            '{id}/report',
+            [FieldVisitController::class, 'submitReport']
+        );
+
+        Route::post(
+            '{id}/rating',
+            [FieldVisitController::class, 'submitRating']
+        );
+
+    });
+
+
+    /*
+    |--------------------------------------------------------------------------
     | Knowledge Base Management
     |--------------------------------------------------------------------------
     */
 
-    Route::middleware(['role:Admin|Agricultural Expert'])->group(function () {
+    Route::middleware([
+        'role:Admin|Agricultural Expert'
+    ])->group(function () {
 
         Route::post(
             '/knowledge_base_item',
@@ -318,6 +394,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             '/knowledge_base_item/{id}',
             [KnowledgeBaseController::class, 'destroy']
         )->name('api.knowledge-base.destroy');
+
     });
 
 
