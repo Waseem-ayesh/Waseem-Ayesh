@@ -61,7 +61,8 @@ Route::get('/platform_settings', [PlatformSettingController::class, 'index'])->n
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth:sanctum'])->group(function () {
-
+    Route::patch('/profile', [AuthController::class, 'updateProfile'])
+    ->name('api.profile.update');
     Route::post('/logout', [AuthController::class, 'logout'])->name('api.auth.logout');
     Route::get('/auth/me', [AuthController::class, 'me'])->name('api.auth.me');
 

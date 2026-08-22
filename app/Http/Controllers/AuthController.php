@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Spatie\Permission\Models\Role;
-
 class AuthController extends Controller
 {
     /**
@@ -94,6 +93,25 @@ class AuthController extends Controller
             'user'         => $user->load(['role', 'roles'])
         ], 200);
     }
+
+    public function updateProfile(Request $request)
+{
+    $user = $request->user();
+
+    $validated = $request->validate([
+        'name' => 'sometimes|string|max:255',
+        'phone' => 'nullable|string|max:20|unique:users,phone,' . $user->id,
+        'district' => 'nullable|string|max:100',
+    ]);
+
+    $user->update($validated);
+
+    return response()->json([
+        'status' => true,
+        'message' => 'User profile updated successfully',
+        'user' => $user->fresh()->load(['role', 'roles', 'region']),
+    ]);
+}
 
     public function logout(Request $request)
     {
