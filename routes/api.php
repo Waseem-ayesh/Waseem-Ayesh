@@ -1,6 +1,6 @@
 <?php
 
-require __DIR__ . '/auth.php';
+require __DIR__. '/auth.php';
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -21,402 +21,105 @@ use App\Http\Controllers\FieldVisitController;
 use App\Http\Controllers\PlatformSettingController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\RoleController;
-use App\Http\Controllers\NotificationController;
-
-
-/*
-|--------------------------------------------------------------------------
-| Authenticated User
-|--------------------------------------------------------------------------
-*/
+use App\Http\Controllers\NotificationController; 
+use App\Http\Controllers\EngineerProfileController;
+use App\Http\Controllers\FieldVisitReportController;
 
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
 });
 
-
 /*
 |--------------------------------------------------------------------------
-| Public Routes
+| Public Routes (المسارات العامة)
 |--------------------------------------------------------------------------
 */
 
-Route::post('/register', [AuthController::class, 'register'])
-    ->name('api.auth.register');
+Route::post('/register', [AuthController::class, 'register'])->name('api.auth.register');
+Route::post('/login', [AuthController::class, 'login'])->name('login');
 
-Route::post('/login', [AuthController::class, 'login'])
-    ->name('login');
+Route::get('/categories', [CategoryController::class, 'index'])->name('api.categories.index');
+Route::get('/categories/{id}', [CategoryController::class, 'show'])->name('api.categories.show');
 
+Route::get('/regions', [RegionController::class, 'index'])->name('api.regions.index');
+Route::get('/regions/{id}', [RegionController::class, 'show'])->name('api.regions.show');
 
-/*
-|--------------------------------------------------------------------------
-| Free Consultation
-|--------------------------------------------------------------------------
-*/
+Route::get('/specializations', [SpecializationController::class, 'index'])->name('api.specializations.index');
+Route::get('/specializations/{id}', [SpecializationController::class, 'show'])->name('api.specializations.show');
 
-Route::post('/consultations', [ConsultationController::class, 'store'])
-    ->name('api.consultations.store');
+Route::get('/plants', [PlantController::class, 'index'])->name('api.plants.index');
+Route::get('/plants/{id}', [PlantController::class, 'show'])->name('api.plants.show');
 
+Route::get('/knowledge_base_item', [KnowledgeBaseController::class, 'index'])->name('api.knowledge-base.index');
+Route::get('/knowledge_base_item/{id}', [KnowledgeBaseController::class, 'show'])->name('api.knowledge-base.show');
 
-/*
-|--------------------------------------------------------------------------
-| Public Feasibility Studies
-| متاحة للزوار بدون تسجيل دخول
-|--------------------------------------------------------------------------
-*/
-
-Route::get('/feasibility_studies', [FeasibilityStudyController::class, 'index'])
-    ->name('api.feasibility-studies.index');
-
-Route::get('/feasibility_studies/{id}', [FeasibilityStudyController::class, 'show'])
-    ->name('api.feasibility-studies.show');
-
+Route::get('/platform_settings', [PlatformSettingController::class, 'index'])->name('api.platform-settings.index');
 
 /*
 |--------------------------------------------------------------------------
-| Public Categories
+| Protected Routes (المسارات المحمية بتوكين Sanctum)
 |--------------------------------------------------------------------------
 */
-
-Route::get('/categories', [CategoryController::class, 'index'])
-    ->name('api.categories.index');
-
-Route::get('/categories/{id}', [CategoryController::class, 'show'])
-    ->name('api.categories.show');
-
-
-/*
-|--------------------------------------------------------------------------
-| Public Regions
-|--------------------------------------------------------------------------
-*/
-
-Route::get('/regions', [RegionController::class, 'index'])
-    ->name('api.regions.index');
-
-Route::get('/regions/{id}', [RegionController::class, 'show'])
-    ->name('api.regions.show');
-
-
-/*
-|--------------------------------------------------------------------------
-| Public Specializations
-|--------------------------------------------------------------------------
-*/
-
-Route::get('/specializations', [SpecializationController::class, 'index'])
-    ->name('api.specializations.index');
-
-Route::get('/specializations/{id}', [SpecializationController::class, 'show'])
-    ->name('api.specializations.show');
-
-
-/*
-|--------------------------------------------------------------------------
-| Public Plants
-|--------------------------------------------------------------------------
-*/
-
-Route::get('/plants', [PlantController::class, 'index'])
-    ->name('api.plants.index');
-
-Route::get('/plants/{id}', [PlantController::class, 'show'])
-    ->name('api.plants.show');
-
-
-/*
-|--------------------------------------------------------------------------
-| Public Knowledge Base
-|--------------------------------------------------------------------------
-*/
-
-Route::get('/knowledge_base_item', [KnowledgeBaseController::class, 'index'])
-    ->name('api.knowledge-base.index');
-
-Route::get('/knowledge_base_item/{id}', [KnowledgeBaseController::class, 'show'])
-    ->name('api.knowledge-base.show');
-
-
-/*
-|--------------------------------------------------------------------------
-| Public Platform Settings
-|--------------------------------------------------------------------------
-*/
-
-Route::get('/platform_settings', [PlatformSettingController::class, 'index'])
-    ->name('api.platform-settings.index');
-
-
-/*
-|--------------------------------------------------------------------------
-| Protected Routes
-|--------------------------------------------------------------------------
-*/
-
 Route::middleware(['auth:sanctum'])->group(function () {
 
-    /*
-    |--------------------------------------------------------------------------
-    | Authentication
-    |--------------------------------------------------------------------------
-    */
+    Route::post('/logout', [AuthController::class, 'logout'])->name('api.auth.logout');
+    Route::get('/auth/me', [AuthController::class, 'me'])->name('api.auth.me');
 
-    Route::post('/logout', [AuthController::class, 'logout'])
-        ->name('api.auth.logout');
+    // مسارات الإشعارات العامة لجميع المستخدمين المسجلين (مزارع، مهندس، مدير)
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::post('/notifications', [NotificationController::class, 'send']); // <--- أضف هذا المسار للإرسال
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+    Route::match(['post', 'patch'], '/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+    
 
-    Route::get('/auth/me', [AuthController::class, 'me'])
-        ->name('api.auth.me');
+    // مسارات التقارير التشخيصية للزيارات الميدانية (محمية بالكامل)
+    Route::get('/field_visit_reports', [FieldVisitReportController::class, 'index']);
+    Route::post('/field_visits/{id}/report', [FieldVisitReportController::class, 'store']);
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Admin Routes
-    |--------------------------------------------------------------------------
-    */
-
+    Route::put('/users/{id}', [UserController::class, 'update']);
+    
+    // مسارات الأدمن الإدارية
     Route::middleware(['role:Admin'])->group(function () {
-
         Route::apiResource('users', UserController::class);
-
         Route::apiResource('roles', RoleController::class);
-
-        Route::put(
-            '/platform_settings',
-            [PlatformSettingController::class, 'update']
-        )->name('api.platform-settings.update');
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Admin Notifications
-        |--------------------------------------------------------------------------
-        */
-
-        Route::prefix('admin/notifications')->group(function () {
-
-            Route::get(
-                '/',
-                [NotificationController::class, 'index']
-            );
-
-            Route::post(
-                '/send',
-                [NotificationController::class, 'send']
-            );
-
-            Route::patch(
-                '/{id}/read',
-                [NotificationController::class, 'markAsRead']
-            );
-
-        });
-
+        Route::put('/platform_settings', [PlatformSettingController::class, 'update'])->name('api.platform-settings.update');
     });
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Consultation Management
-    |--------------------------------------------------------------------------
-    */
-
-    Route::middleware([
-        'permission:manage consultations|answer consultations'
-    ])->group(function () {
-
-        Route::get(
-            '/consultations',
-            [ConsultationController::class, 'index']
-        );
-
-        Route::get(
-            '/consultations/{id}',
-            [ConsultationController::class, 'show']
-        );
-
-        Route::put(
-            '/consultations/{id}',
-            [ConsultationController::class, 'update']
-        );
-
-        Route::patch(
-            '/consultations/{id}',
-            [ConsultationController::class, 'update']
-        );
-
-        Route::delete(
-            '/consultations/{id}',
-            [ConsultationController::class, 'destroy']
-        );
-
+    Route::middleware(['permission:manage consultations|answer consultations'])->group(function () {
+        Route::apiResource('consultations', ConsultationController::class);
     });
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Feasibility Studies Management
-    |--------------------------------------------------------------------------
-    */
-
-    Route::middleware([
-        'permission:manage feasibility studies'
-    ])->group(function () {
-
-        Route::post(
-            '/feasibility_studies',
-            [FeasibilityStudyController::class, 'store']
-        );
-
-        Route::put(
-            '/feasibility_studies/{id}',
-            [FeasibilityStudyController::class, 'update']
-        );
-
-        Route::patch(
-            '/feasibility_studies/{id}',
-            [FeasibilityStudyController::class, 'update']
-        );
-
-        Route::delete(
-            '/feasibility_studies/{id}',
-            [FeasibilityStudyController::class, 'destroy']
-        );
-
+    Route::middleware(['permission:manage feasibility studies|show feasibility studies'])->group(function () {
+        Route::apiResource('feasibility_studies', FeasibilityStudyController::class);
     });
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Feasibility Requests
-    |--------------------------------------------------------------------------
-    */
-
-    Route::middleware([
-        'permission:manage feasibility requests|create feasibility request|view own feasibility request'
-    ])->group(function () {
-
-        Route::apiResource(
-            'feasibility_requests',
-            FeasibilityRequestController::class
-        );
-
+    Route::middleware(['permission:manage feasibility requests|create feasibility request|view own feasibility request'])->group(function () {
+        Route::apiResource('feasibility_requests', FeasibilityRequestController::class);
     });
 
+    Route::apiResource('plant_diseases', PlantDiseaseController::class);
+    Route::apiResource('disease_treatments', DiseaseTreatmentController::class);
 
-    /*
-    |--------------------------------------------------------------------------
-    | Plant Diseases
-    |--------------------------------------------------------------------------
-    */
-
-    Route::apiResource(
-        'plant_diseases',
-        PlantDiseaseController::class
-    );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Disease Treatments
-    |--------------------------------------------------------------------------
-    */
-
-    Route::apiResource(
-        'disease_treatments',
-        DiseaseTreatmentController::class
-    );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Field Visits
-    |--------------------------------------------------------------------------
-    */
-
-    Route::apiResource(
-        'field_visits',
-        FieldVisitController::class
-    );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Field Visit Workflow
-    |--------------------------------------------------------------------------
-    */
-
+    // إدارة الزيارات الميدانية ومراحل الرحلة
+    Route::apiResource('field_visits', FieldVisitController::class);
     Route::prefix('field_visits')->group(function () {
-
-        Route::patch(
-            '{id}/assign',
-            [FieldVisitController::class, 'assignEngineer']
-        );
-
-        Route::patch(
-            '{id}/estimate',
-            [FieldVisitController::class, 'submitEstimate']
-        );
-
-        Route::post(
-            '{id}/report',
-            [FieldVisitController::class, 'submitReport']
-        );
-
-        Route::post(
-            '{id}/rating',
-            [FieldVisitController::class, 'submitRating']
-        );
-
+        Route::patch('{id}/assign', [FieldVisitController::class, 'assignEngineer']);
+        Route::patch('{id}/estimate', [FieldVisitController::class, 'submitEstimate']);
+        Route::post('{id}/report', [FieldVisitController::class, 'submitReport']);
+        Route::post('{id}/rating', [FieldVisitController::class, 'submitRating']);
     });
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Knowledge Base Management
-    |--------------------------------------------------------------------------
-    */
-
-    Route::middleware([
-        'role:Admin|Agricultural Expert'
-    ])->group(function () {
-
-        Route::post(
-            '/knowledge_base_item',
-            [KnowledgeBaseController::class, 'store']
-        )->name('api.knowledge-base.store');
-
-        Route::put(
-            '/knowledge_base_item/{id}',
-            [KnowledgeBaseController::class, 'update']
-        )->name('api.knowledge-base.update');
-
-        Route::delete(
-            '/knowledge_base_item/{id}',
-            [KnowledgeBaseController::class, 'destroy']
-        )->name('api.knowledge-base.destroy');
-
+    Route::middleware(['role:Admin|Agricultural Expert'])->group(function () {
+        Route::post('/knowledge_base_item', [KnowledgeBaseController::class, 'store'])->name('api.knowledge-base.store');
+        Route::put('/knowledge_base_item/{id}', [KnowledgeBaseController::class, 'update'])->name('api.knowledge-base.update');
+        Route::delete('/knowledge_base_item/{id}', [KnowledgeBaseController::class, 'destroy'])->name('api.knowledge-base.destroy');
     });
 
+    Route::get('/engineer_profiles', [EngineerProfileController::class, 'show']);
+    Route::post('/engineer_profiles', [EngineerProfileController::class, 'store']);
 
-    /*
-    |--------------------------------------------------------------------------
-    | Attachments
-    |--------------------------------------------------------------------------
-    */
-
-    Route::post(
-        '/attachments',
-        [AttachmentController::class, 'store']
-    )->name('api.attachments.store');
-
-    Route::get(
-        '/attachments/{id}',
-        [AttachmentController::class, 'show']
-    )->name('api.attachments.show');
-
-    Route::delete(
-        '/attachments/{id}',
-        [AttachmentController::class, 'destroy']
-    )->name('api.attachments.destroy');
-
+    // المرفقات
+    Route::post('/attachments', [AttachmentController::class, 'store'])->name('api.attachments.store');
+    Route::get('/attachments/{id}', [AttachmentController::class, 'show'])->name('api.attachments.show');
+    Route::delete('/attachments/{id}', [AttachmentController::class, 'destroy'])->name('api.attachments.destroy');
 });
